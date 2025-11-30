@@ -20,13 +20,16 @@ export default function ToolBlogCard({ onCardsChange, initialCards }: Props): Re
       return initialCards.map((card, index) => ({
         ...card,
         id: index + 1,
+        sectionNumber: card.sectionNumber ?? index + 1,
       }));
     }
-    return [{ id: 1, sectionNumber: 1, blogTitle: "", blogBody: "", dealsMentioned: [] }];
+    return [];
   });
 
   const onCardsChangeRef = useRef(onCardsChange);
   const hasInitializedRef = useRef(false);
+  const previousInitialCardsRef = useRef<string>("");
+  const isSyncingFromInitialRef = useRef(false);
   
   useEffect((): void => {
     onCardsChangeRef.current = onCardsChange;
@@ -34,22 +37,54 @@ export default function ToolBlogCard({ onCardsChange, initialCards }: Props): Re
 
   // Sync cards state when initialCards changes (e.g., after refresh/API load)
   // This ensures real data from API is loaded instead of demo data
-  // Only sync once when initialCards is first provided, not on every change
+  // Only update if initialCards actually changed (deep comparison via JSON stringify)
   useEffect((): void => {
-    if (initialCards && initialCards.length > 0 && !hasInitializedRef.current) {
-        const newCards = initialCards.map((card, index) => ({
-          ...card,
-          id: index + 1,
-        }));
-        setCards(newCards);
+    const currentInitialCardsStr = JSON.stringify(initialCards || []);
+    
+    // Skip if initialCards hasn't actually changed
+    if (previousInitialCardsRef.current === currentInitialCardsStr) {
+      return;
+    }
+    
+    previousInitialCardsRef.current = currentInitialCardsStr;
+    isSyncingFromInitialRef.current = true;
+    
+    if (initialCards && initialCards.length > 0) {
+      const newCards = initialCards.map((card, index) => ({
+        ...card,
+        id: index + 1,
+        sectionNumber: card.sectionNumber ?? index + 1,
+      }));
+      setCards(newCards);
+      hasInitializedRef.current = true;
+    } else if (initialCards && initialCards.length === 0) {
+      // If initialCards is explicitly empty array, clear cards
+      setCards([]);
       hasInitializedRef.current = true;
     } else if (!initialCards && hasInitializedRef.current) {
       // Reset flag if initialCards becomes undefined (e.g., new form)
       hasInitializedRef.current = false;
+      setCards([]);
     }
+    
+    // Reset sync flag after state update
+    setTimeout(() => {
+      isSyncingFromInitialRef.current = false;
+    }, 0);
   }, [initialCards]);
 
+  // Only notify parent of changes, but skip if we're currently syncing from initialCards
   useEffect((): void => {
+    // Skip notification if we're syncing from initialCards to prevent infinite loop
+    if (isSyncingFromInitialRef.current) {
+      return;
+    }
+    
+    // Skip the first render notification to prevent initial loop
+    if (!hasInitializedRef.current) {
+      return;
+    }
+    
     const mappedCards: BlogSectionApiResponse[] = cards.map(({ id: _id, ...rest }) => rest);
     onCardsChangeRef.current?.(mappedCards);
   }, [cards]);
@@ -112,7 +147,12 @@ export default function ToolBlogCard({ onCardsChange, initialCards }: Props): Re
         </div>
       </div>
 
-      {cards.map((card) => (
+      {cards.length === 0 ? (
+        <div className="text-zinc-400 text-sm text-center py-8">
+          No tool blog cards yet. Click "Add More Tool Blog Card" to add one.
+        </div>
+      ) : (
+        cards.map((card) => (
         <div
           key={card.id}
           className="Frame2147205990 self-stretch bg-zinc-800 rounded-3xl   inline-flex flex-col justify-start items-start gap-6"
@@ -129,18 +169,31 @@ export default function ToolBlogCard({ onCardsChange, initialCards }: Props): Re
                 </div>
               </div>
               <div className="BlogSectionOne justify-start text-neutral-50 text-xl font-medium font-['Poppins'] leading-8">
-                Blog Section {card.sectionNumber === 1 ? "One" : card.sectionNumber === 2 ? "Two" : card.sectionNumber === 3 ? "Three" : card.sectionNumber === 4 ? "Four" : card.sectionNumber === 5 ? "Five" : String(card.sectionNumber)}
+                Blog Section {(() => {
+                  const num = card.sectionNumber ?? 1;
+                  if (num === 1) return "One";
+                  if (num === 2) return "Two";
+                  if (num === 3) return "Three";
+                  if (num === 4) return "Four";
+                  if (num === 5) return "Five";
+                  return String(num);
+                })()}
               </div>
             </div>
 
             <div className="Frame2147206053 self-stretch flex justify-start items-center gap-6">
-              <div
-                className="FluentDelete16Regular w-6 h-6 relative overflow-hidden cursor-pointer"
-                onClick={(): void => handleDeleteCard(card.id)}
+              <button
+                type="button"
+                className="FluentDelete16Regular w-6 h-6 relative overflow-hidden cursor-pointer hover:opacity-80 transition-opacity"
+                onClick={(e): void => {
+                  e.stopPropagation();
+                  handleDeleteCard(card.id);
+                }}
                 title="Delete card"
+                aria-label="Delete card"
               >
                 <X className="text-zinc-400 w-6 h-6" />
-              </div>
+              </button>
             </div>
           </div>
 
@@ -169,13 +222,43 @@ export default function ToolBlogCard({ onCardsChange, initialCards }: Props): Re
             <SearchAndAddDeal
               selectedDeals={
                 (card.dealsMentioned || [])
-                  .filter((deal) => deal && (deal.title || deal._id || deal.id)) // Filter out invalid deals
-                  .map((deal) => ({
-                  toolName: deal.title || "",
-                    toolLogo: deal.logoUri || deal.logoComponent || "",
-                  toolCategory: deal.category || deal.tag || "Tool",
-                    isVerified: deal.verified ?? false,
-                }))
+                  .filter((deal) => {
+                    if (!deal || typeof deal !== 'object') return false;
+                    // Check if it's in DealApiResponse format (has title)
+                    if ('title' in deal) return Boolean(deal.title);
+                    // Check if it's in backend format (has toolName)
+                    if ('toolName' in deal) return Boolean((deal as { toolName?: string }).toolName);
+                    return false;
+                  })
+                  .map((deal) => {
+                    // Handle DealApiResponse format (title, logoUri, category)
+                    if (deal && typeof deal === 'object' && 'title' in deal) {
+                      const apiDeal: DealApiResponse = deal;
+                      return {
+                        toolName: apiDeal.title || "",
+                        toolLogo: apiDeal.logoUri || apiDeal.logoComponent || "",
+                        toolCategory: apiDeal.category || apiDeal.tag || "Tool",
+                        isVerified: apiDeal.verified ?? false,
+                      };
+                    }
+                    // Handle backend format (toolName, toolLogo, toolCategory)
+                    if (deal && typeof deal === 'object' && 'toolName' in deal) {
+                      const backendDeal = deal as { toolName: string; toolLogo: string; toolCategory: string; isVerified?: boolean };
+                      return {
+                        toolName: backendDeal.toolName || "",
+                        toolLogo: backendDeal.toolLogo || "",
+                        toolCategory: backendDeal.toolCategory || "Tool",
+                        isVerified: backendDeal.isVerified ?? false,
+                      };
+                    }
+                    // Fallback
+                    return {
+                      toolName: "",
+                      toolLogo: "",
+                      toolCategory: "Tool",
+                      isVerified: false,
+                    };
+                  })
                   .filter((tool) => tool.toolName) // Only include deals with a name
               }
               onDealsChange={(tools): void => {
@@ -206,7 +289,8 @@ export default function ToolBlogCard({ onCardsChange, initialCards }: Props): Re
             />
           </div>
         </div>
-      ))}
+        ))
+      )}
     </div>
   );
 }

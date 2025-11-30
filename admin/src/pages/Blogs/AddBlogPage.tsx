@@ -8,7 +8,7 @@ import ToolBlogCard from "../../components/Shared/ToolBlogCard";
 import SimilarBlogs from "../../components/Blogs/AddBlog/SimilarBlogs";
 import Toast, { type ToastLink } from "../../components/Shared/Toast";
 import type { Tool } from "../../types/comparison.types";
-import type { BlogSectionApiResponse } from "../../types/api.types";
+import type { BlogSectionApiResponse, DealApiResponse } from "../../types/api.types";
 import type { BlogData } from "../../types/blog.types";
 import { BLOGS_API } from "../../config/backend";
 
@@ -73,6 +73,40 @@ export default function AddBlogPage(): ReactElement {
           }
         }
 
+        // Ensure blogToolBlogCards have sectionNumber
+        const toolBlogCards = (blog.blogToolBlogCards || []).map((card, index) => {
+          // Transform dealsMentioned from backend format to DealApiResponse format if needed
+          const transformedDeals: DealApiResponse[] = (card.dealsMentioned || []).map((deal: unknown): DealApiResponse => {
+            // Check if it's already in DealApiResponse format (has title/logoUri)
+            if (deal && typeof deal === 'object' && 'title' in deal) {
+              return deal as DealApiResponse;
+            }
+            // Transform from backend format (toolName/toolLogo/toolCategory) to DealApiResponse format
+            if (deal && typeof deal === 'object' && 'toolName' in deal) {
+              const backendDeal = deal as { toolName: string; toolLogo: string; toolCategory: string; isVerified?: boolean };
+              return {
+                title: backendDeal.toolName,
+                logoUri: backendDeal.toolLogo,
+                category: backendDeal.toolCategory,
+                verified: backendDeal.isVerified || false,
+              };
+            }
+            // Fallback - return empty deal structure
+            return {
+              title: "",
+              logoUri: "",
+              category: "Tool",
+              verified: false,
+            };
+          });
+          
+          return {
+            ...card,
+            sectionNumber: card.sectionNumber ?? index + 1,
+            dealsMentioned: transformedDeals,
+          };
+        });
+
         setBlogData({
           blogHeading: blog.blogHeading || "",
           blogBody: blog.blogBody || "",
@@ -84,7 +118,7 @@ export default function AddBlogPage(): ReactElement {
           blogCategory: blog.blogCategory || "",
           blogReadingTime: blog.blogReadingTime || "5 Minute",
           modules: blog.modules || [],
-          blogToolBlogCards: blog.blogToolBlogCards || [],
+          blogToolBlogCards: toolBlogCards,
           moreBlogsSectionTitle: blog.moreBlogsSectionTitle || "",
           moreBlogs: blog.moreBlogs || [],
           blogSlug: blog.blogSlug || "",
@@ -397,16 +431,26 @@ export default function AddBlogPage(): ReactElement {
     // Return cleaned data
     // Cast to BlogData to satisfy type checker - the dealsMentioned is transformed to backend format
     // which is what the API expects, even though BlogData type shows DealApiResponse format
+    // Note: blogBody contains HTML, so we only trim if it's not HTML (to preserve HTML structure)
+    const cleanBlogBody = blogData.blogBody && /<[a-z][\s\S]*>/i.test(blogData.blogBody)
+      ? blogData.blogBody.trim() // Trim HTML but preserve structure
+      : blogData.blogBody.trim();
+    
     return {
       ...blogData,
       blogHeroImage: blogData.blogHeroImage.trim(),
       blogHeading: blogData.blogHeading.trim(),
-      blogBody: blogData.blogBody.trim(),
+      blogBody: cleanBlogBody,
       sectionHeadline: blogData.sectionHeadline.trim(),
       tipBulbText: blogData.tipBulbText.trim(),
       blogCategory: blogData.blogCategory.trim(),
       blogReadingTime: blogData.blogReadingTime.trim(),
-      blogToolBlogCards: validToolBlogCards,
+      blogToolBlogCards: validToolBlogCards.map((card) => ({
+        ...card,
+        blogBody: card.blogBody && /<[a-z][\s\S]*>/i.test(card.blogBody)
+          ? card.blogBody.trim()
+          : card.blogBody?.trim() || "",
+      })),
     } as BlogData;
   };
 
@@ -606,7 +650,7 @@ export default function AddBlogPage(): ReactElement {
             <ToolsMentioned
               headline={blogData.sectionHeadline}
               tip={blogData.tipBulbText}
-              initialTools={blogData.blogToolsMentioned.map((tool) => ({
+              initialTools={(blogData.blogToolsMentioned || []).filter(tool => tool && tool.toolName).map((tool) => ({
                 id: tool.toolName,
                 name: tool.toolName,
                 logo: tool.toolLogo,
@@ -635,10 +679,12 @@ export default function AddBlogPage(): ReactElement {
             />
 
             {/* Tool Blog Cards */}
-            <ToolBlogCard
-              initialCards={blogData.blogToolBlogCards || []}
-              onCardsChange={handleToolBlogCardsChange}
-            />
+            {blogData.blogToolBlogCards && blogData.blogToolBlogCards.length > 0 && (
+              <ToolBlogCard
+                initialCards={blogData.blogToolBlogCards}
+                onCardsChange={handleToolBlogCardsChange}
+              />
+            )}
 
             {/* Similar Posts Section */}
             <SimilarBlogs

@@ -688,14 +688,6 @@ export default function Hero({
           >
             <div
               data-layer="Input"
-              className="Input h-14 px-4 py-3 bg-zinc-800 rounded-tl-xl rounded-bl-xl outline-1 -outline-offset-0.5 outline-zinc-700 flex justify-start items-center overflow-hidden"
-            >
-              <div className="justify-start text-neutral-50 text-base font-normal font-['Poppins'] leading-6 placeholder:text-zinc-500">
-                Save Upto
-              </div>
-            </div>
-            <div
-              data-layer="Input"
               className="Input flex-1 h-14 px-4 py-3 bg-zinc-900 outline-1 -outline-offset-0.5 outline-zinc-700 flex justify-start items-center"
             >
               <input
