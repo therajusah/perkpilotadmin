@@ -6,8 +6,9 @@ import ArticleGrid from "../../components/Deals/DealManagement/ArticleGrid";
 import FooterActions from "../../components/Shared/FooterActions";
 import { DEALPAGE_API, DEALS_API, STATS_API } from "../../config/backend";
 import type { DealApiResponse } from "../../types/api.types";
-import type { DealPageData, DealPageApiResponse, ApiErrorResponse } from "../../types/dealPage.types";
+import type { DealPageData, DealPageApiResponse } from "../../types/dealPage.types";
 import Stats from "../../components/HomeManagement/Stats";
+import { authenticatedPut } from "../../utils/api";
 
 interface StatData {
   numberValue: string;
@@ -145,22 +146,7 @@ export default function DealManagementPage(): ReactElement {
         payload.status = "live";
       }
 
-      const response = await fetch(DEALPAGE_API, {
-        method: "PUT",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(payload),
-      });
-
-      if (!response.ok) {
-        const errorData = (await response.json().catch(() => ({}))) as ApiErrorResponse;
-        throw new Error(
-          errorData.message || `Failed to save deal page: ${response.status}`
-        );
-      }
-
-      const savedData = (await response.json()) as DealPageApiResponse;
+      const savedData = await authenticatedPut<DealPageApiResponse>(DEALPAGE_API, payload);
       setDealPageData({
         status: savedData.status || "live",
         topTagline: savedData.topTagline || "",
@@ -177,16 +163,10 @@ export default function DealManagementPage(): ReactElement {
           stats: statsData.filter(stat => stat.numberValue || stat.message),
         };
 
-        const statsResponse = await fetch(STATS_API, {
-          method: "PUT",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify(statsPayload),
-        });
-
-        if (!statsResponse.ok) {
-          console.error("Failed to save stats:", statsResponse.status);
+        try {
+          await authenticatedPut(STATS_API, statsPayload);
+        } catch (err) {
+          console.error("Failed to save stats:", err);
         }
       }
 

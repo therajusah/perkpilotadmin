@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { REVIEWPAGE_API } from "../config/backend";
 import type { ReviewApiResponse } from "../types/api.types";
+import { authenticatedPut } from "../utils/api";
 
 export interface ReviewPageData {
   status: "live" | "maintenance";
@@ -85,19 +86,7 @@ export function useReviewPage() {
         featuredReviews: data.featuredReviews,
       };
 
-      const response = await fetch(REVIEWPAGE_API, {
-        method: "PUT",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(payload),
-      });
-
-      if (!response.ok) {
-        throw new Error(`Failed to update review page: ${response.status}`);
-      }
-
-      const updated = (await response.json()) as ReviewPageApiResponse;
+      const updated = await authenticatedPut<ReviewPageApiResponse>(REVIEWPAGE_API, payload);
       
       setReviewPageData({
         status: updated.reviewPageStatus ?? updated.status ?? data.status ?? "live",

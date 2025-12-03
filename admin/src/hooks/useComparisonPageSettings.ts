@@ -1,5 +1,6 @@
 import { COMPARISON_PAGE_SETTINGS_API } from "../config/backend";
 import type { ComparisonPageSettingsApiResponse } from "../types/api.types";
+import { authenticatedPut } from "../utils/api";
 
 const DEFAULT_TIMEOUT = 10000;
 
@@ -45,16 +46,11 @@ export function fetchComparisonPageSettings(
 
 export function updateComparisonPageSettings(
   body: Partial<ComparisonPageSettingsApiResponse>,
-  timeoutMs = DEFAULT_TIMEOUT
+  _timeoutMs = DEFAULT_TIMEOUT
 ): Promise<ComparisonPageSettingsApiResponse> {
-  return requestWithTimeout<ComparisonPageSettingsApiResponse>(
+  return authenticatedPut<ComparisonPageSettingsApiResponse>(
     COMPARISON_PAGE_SETTINGS_API,
-    {
-      method: "PUT",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(body ?? {}),
-    },
-    timeoutMs
+    body ?? {}
   ).catch((error) => {
     if (error instanceof Error) {
       throw new Error(`Failed to update comparison page settings: ${error.message}`);

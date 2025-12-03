@@ -1,7 +1,8 @@
 import { useState, type ReactElement } from "react";
 import { COMPARISIONS_API } from "../../../config/backend";
-import type { ComparisonApiResponse, ApiError } from "../../../types/api.types";
+import type { ComparisonApiResponse } from "../../../types/api.types";
 import type { ComparisonData, BlogModuleEntry } from "../../../types/comparison.types";
+import { authenticatedPost, authenticatedPut } from "../../../utils/api";
 
 type Props = {
   comparisonData?: ComparisonData | (Partial<ComparisonApiResponse> & Record<string, string | number | boolean | unknown[] | undefined>);
@@ -97,24 +98,10 @@ export default function FooterActions({
       const url = comparisonId 
         ? `${COMPARISIONS_API}/${comparisonId}` 
         : COMPARISIONS_API;
-      const method = comparisonId ? "PUT" : "POST";
 
-      const response = await fetch(url, {
-        method,
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(dataToSend),
-      });
-
-      if (!response.ok) {
-        const errorData = (await response.json().catch((): Record<string, unknown> => ({}))) as ApiError | { message?: string };
-        throw new Error(
-          errorData.message || `Server error: ${response.status}`
-        );
-      }
-
-      const result = await response.json() as ComparisonApiResponse;
+      const result = comparisonId
+        ? await authenticatedPut<ComparisonApiResponse>(url, dataToSend)
+        : await authenticatedPost<ComparisonApiResponse>(url, dataToSend);
       console.log(`Comparison draft ${comparisonId ? "updated" : "saved"} successfully:`, result);
       onSaveSuccess?.();
     } catch (err) {
@@ -218,24 +205,10 @@ export default function FooterActions({
       const url = comparisonId 
         ? `${COMPARISIONS_API}/${comparisonId}` 
         : COMPARISIONS_API;
-      const method = comparisonId ? "PUT" : "POST";
 
-      const response = await fetch(url, {
-        method,
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(dataToSend),
-      });
-
-      if (!response.ok) {
-        const errorData = (await response.json().catch((): Record<string, unknown> => ({}))) as ApiError | { message?: string };
-        throw new Error(
-          errorData.message || `Server error: ${response.status}`
-        );
-      }
-
-      const result = await response.json() as ComparisonApiResponse;
+      const result = comparisonId
+        ? await authenticatedPut<ComparisonApiResponse>(url, dataToSend)
+        : await authenticatedPost<ComparisonApiResponse>(url, dataToSend);
       console.log(`Comparison ${comparisonId ? "updated" : "created"} successfully:`, result);
       onSaveSuccess?.();
     } catch (err) {

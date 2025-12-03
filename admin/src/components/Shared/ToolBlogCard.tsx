@@ -445,9 +445,9 @@ function SearchAndAddDeal({
             {loading ? (
               <div className="px-4 py-2 text-zinc-400 text-sm">Searching...</div>
             ) : searchResults.length > 0 ? (
-              searchResults.map((deal) => (
+              searchResults.map((deal, index) => (
                 <button
-                  key={deal._id || deal.id}
+                  key={`search-deal-${deal._id || deal.id || deal.title || index}-${index}`}
                   type="button"
                   onClick={(): void => handleAddDeal(deal)}
                   className="w-full text-left px-4 py-2 hover:bg-zinc-700 transition-colors flex items-center gap-3"
@@ -480,7 +480,7 @@ function SearchAndAddDeal({
         <div className="self-stretch flex flex-row gap-4 flex-wrap">
           {selectedDeals.map((deal, index) => (
             <div
-              key={`${deal.toolName}-${index}`}
+              key={`selected-deal-${deal.toolName || 'deal'}-${index}`}
               className="Card self-stretch h-[88px] px-4 bg-zinc-800 rounded-3xl outline-1 outline-zinc-700 inline-flex justify-start items-center gap-4"
             >
               <div className="Frame2147205991 flex justify-start items-center">

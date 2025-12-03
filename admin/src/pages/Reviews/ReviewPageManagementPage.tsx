@@ -11,6 +11,7 @@ import {
   REVIEWS_API,
 } from "../../config/backend";
 import type { ReviewApiResponse } from "../../types/api.types";
+import { authenticatedPut } from "../../utils/api";
 
 interface ReviewPageSettingsData {
   _id?: string;
@@ -215,20 +216,7 @@ export default function ReviewPageManagementPage(): ReactElement {
         reviewPageStatus: publish ? "live" : pageSettings.reviewPageStatus,
       };
 
-      const response = await fetch(REVIEWPAGE_API, {
-        method: "PUT",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(payload),
-      });
-
-      if (!response.ok) {
-        const errorBody = (await response.json().catch(() => ({}))) as { message?: string };
-        throw new Error(errorBody.message || "Failed to save review page");
-      }
-
-      const updated = (await response.json()) as ReviewApiResponse;
+      const updated = await authenticatedPut<ReviewApiResponse>(REVIEWPAGE_API, payload);
       const featuredIds: string[] = (updated.featuredReviews || []).map(
         (item) => {
           if (typeof item === "string") {

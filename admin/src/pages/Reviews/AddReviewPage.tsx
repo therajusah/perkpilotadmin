@@ -18,6 +18,7 @@ import TagChips from "../../components/Reviews/AddReview/TagChips";
 import FAQ from "../../components/Reviews/AddReview/FAQ";
 import FooterActions from "../../components/Reviews/AddReview/FooterActions";
 import { REVIEWS_API } from "../../config/backend";
+import { authenticatedPost } from "../../utils/api";
 import { formatDateISO } from "../../utils/helpers";
 
 type TabId = "overview" | "features" | "pricing" | "reviews" | "alternatives";
@@ -317,22 +318,7 @@ export default function AddReviewPage(): ReactElement {
       const { rating, ...dataToSend } = reviewData;
       const payload = rating && rating > 0 ? reviewData : dataToSend;
 
-      const response = await fetch(REVIEWS_API, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(payload),
-      });
-
-      if (!response.ok) {
-        const errorData = await response.json().catch(() => ({})) as { message?: string };
-        throw new Error(
-          errorData.message || `Server error: ${response.status}`
-        );
-      }
-
-      const result = await response.json() as ReviewApiResponse;
+      const result = await authenticatedPost<ReviewApiResponse>(REVIEWS_API, payload);
       console.log("Review created successfully:", result);
       setToast({
         message: "Review published successfully!",

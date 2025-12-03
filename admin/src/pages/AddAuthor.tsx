@@ -4,6 +4,7 @@ import { Upload } from "lucide-react";
 import { uploadToCloudinary } from "../config/cloudinary";
 import { AUTHORS_API } from "../config/backend";
 import type { AuthorFormData, AuthorData } from "../types/author.types";
+import { authenticatedPost } from "../utils/api";
 
 export default function AddAuthor(): ReactElement {
   const navigate = useNavigate();
@@ -80,22 +81,7 @@ export default function AddAuthor(): ReactElement {
     const authorData: AuthorData = { ...formData };
 
     try {
-      const response = await fetch(AUTHORS_API, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(authorData),
-      });
-
-      if (!response.ok) {
-        const errorData = (await response.json().catch((): Record<string, unknown> => ({}))) as { message?: string };
-        throw new Error(
-          errorData.message || `Server error: ${response.status}`
-        );
-      }
-
-      await response.json();
+      await authenticatedPost(AUTHORS_API, authorData);
       void Promise.resolve(navigate(-1));
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : "Failed to save author";

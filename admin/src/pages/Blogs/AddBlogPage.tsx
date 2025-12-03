@@ -11,6 +11,7 @@ import type { Tool } from "../../types/comparison.types";
 import type { BlogSectionApiResponse, DealApiResponse } from "../../types/api.types";
 import type { BlogData } from "../../types/blog.types";
 import { BLOGS_API } from "../../config/backend";
+import { authenticatedPost, authenticatedPut } from "../../utils/api";
 
 export default function AddBlogPage(): ReactElement {
   const navigate = useNavigate();
@@ -456,23 +457,15 @@ export default function AddBlogPage(): ReactElement {
 
   const saveBlog = async (cleanedData: ReturnType<typeof prepareBlogData>, publish: boolean): Promise<string> => {
       const url = isEditMode && id ? `${BLOGS_API}/${id}` : BLOGS_API;
-      const method = isEditMode ? "PUT" : "POST";
-
-      const response = await fetch(url, {
-        method,
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
+      const payload = {
           ...cleanedData,
         blogIsPublished: publish,
-        }),
-      });
+      };
 
-      if (!response.ok) {
-        const errorData = (await response.json().catch(() => ({}))) as { message?: string };
-      throw new Error(errorData.message || (publish ? "Failed to publish blog" : "Failed to save draft"));
-      }
-
-      const savedBlog = await response.json() as { _id?: string; blogSlug?: string };
+      const savedBlog = isEditMode
+        ? await authenticatedPut<{ _id?: string; blogSlug?: string }>(url, payload)
+        : await authenticatedPost<{ _id?: string; blogSlug?: string }>(url, payload);
+      
       return savedBlog._id || id || "";
   };
 

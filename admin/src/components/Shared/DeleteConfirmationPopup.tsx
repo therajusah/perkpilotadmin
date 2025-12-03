@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect, type ReactElement, type ReactNode } from "react";
-import { safeJsonParse } from "../../utils/helpers";
+import { authenticatedDelete } from "../../utils/api";
 
 export interface DeleteConfirmationPopupProps {
   onClose?: () => void;
@@ -38,18 +38,7 @@ export default function DeleteConfirmationPopup({
         const safeBase = apiEndpoint.replace(/\/+$/, "");
         const url = `${safeBase}/${itemId}`;
 
-        const res = await fetch(url, {
-          method: "DELETE",
-          headers: {
-            "Content-Type": "application/json",
-            "Accept": "application/json",
-          },
-        });
-
-        if (!res.ok) {
-          const body = await safeJsonParse<{ message?: string }>(res);
-          throw new Error(body.message || `Server returned ${res.status}`);
-        }
+        await authenticatedDelete(url);
 
         // success
         onConfirm?.();

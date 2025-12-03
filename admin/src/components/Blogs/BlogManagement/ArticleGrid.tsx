@@ -4,6 +4,7 @@ import { ChevronDown } from "lucide-react";
 import { BLOGS_API } from "../../../config/backend";
 import type { BlogApiResponse, UIBlog } from "../../../types/blog.types";
 import { formatDate } from "../../../utils/helpers";
+import { authenticatedPatch } from "../../../utils/api";
 
 export default function ArticleGrid(): ReactElement{
   const [query, setQuery] = useState("");
@@ -146,19 +147,9 @@ export default function ArticleGrid(): ReactElement{
       const blogIdToUpdate = blog._id ?? blog.id;
       if (!blogIdToUpdate) return;
 
-      const response = await fetch(`${BLOGS_API}/${blogIdToUpdate}`, {
-        method: "PATCH",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          blogIsFeatured: newFeaturedStatus,
-        }),
+      await authenticatedPatch(`${BLOGS_API}/${blogIdToUpdate}`, {
+        blogIsFeatured: newFeaturedStatus,
       });
-
-      if (!response.ok) {
-        throw new Error(`Failed to update featured status: ${response.status}`);
-      }
     } catch (error) {
       console.error("Error updating featured status:", error);
       

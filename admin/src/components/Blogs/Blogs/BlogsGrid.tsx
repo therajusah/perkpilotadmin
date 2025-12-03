@@ -5,6 +5,7 @@ import { BLOGS_API } from "../../../config/backend";
 import BlogCardPopup from "./BlogCardPopup";
 import type { BlogApiResponse, UIBlog, BlogsGridProps } from "../../../types/blog.types";
 import { formatDate } from "../../../utils/helpers";
+import { authenticatedDelete } from "../../../utils/api";
 
 // Helper to safely extract title string
 const getTitleString = (blog: UIBlog): string => {
@@ -106,37 +107,13 @@ export default function BlogsGrid({
     }
 
     try {
-      const response = await fetch(`${BLOGS_API}/${idToDelete}`, {
-        method: "DELETE",
-        headers: {
-          "Content-Type": "application/json",
-        },
-      });
-
-      // Check for success status (200, 204, or 204 No Content)
-      if (response.status === 200 || response.status === 204) {
+      await authenticatedDelete(`${BLOGS_API}/${idToDelete}`);
+      
         setShowModal(false);
         setSelectedBlog(null);
         
         // Refresh the blog list from API (without showing loading spinner)
         await fetchBlogs(false);
-      } else {
-        // Handle non-success status codes
-        const body = (await response.json().catch(() => ({}))) as { message?: string };
-        const errorMessage = body.message || `Server returned ${response.status}`;
-        
-        // Check if it's a 404 (not found) - this might mean it was already deleted
-        if (response.status === 404) {
-          // Still refresh the list in case it was already deleted
-    setShowModal(false);
-    setSelectedBlog(null);
-          await fetchBlogs(false);
-          // Don't show error for 404 as it might mean successful deletion
-          return;
-        }
-        
-        throw new Error(errorMessage);
-      }
     } catch (error) {
       console.error("Delete failed", error);
       const errorMessage = error instanceof Error ? error.message : "Failed to delete blog";

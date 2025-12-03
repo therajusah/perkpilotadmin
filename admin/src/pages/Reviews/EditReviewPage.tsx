@@ -18,6 +18,7 @@ import TagChips from "../../components/Reviews/AddReview/TagChips";
 import FAQ from "../../components/Reviews/AddReview/FAQ";
 import FooterActions from "../../components/Reviews/AddReview/FooterActions";
 import { REVIEWS_API } from "../../config/backend";
+import { authenticatedPut } from "../../utils/api";
 
 type TabId = "overview" | "features" | "pricing" | "reviews" | "alternatives";
 
@@ -285,22 +286,7 @@ export default function EditReviewPage(): ReactElement {
       const { rating, ...dataToSend } = reviewData;
       const payload = rating && rating > 0 ? reviewData : dataToSend;
 
-      const response = await fetch(`${REVIEWS_API}/${id}`, {
-        method: "PUT",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(payload),
-      });
-
-      if (!response.ok) {
-        const errorData = await response.json().catch(() => ({})) as { message?: string };
-        throw new Error(
-          errorData.message || `Server error: ${response.status}`
-        );
-      }
-
-      const result = await response.json() as ReviewApiResponse;
+      const result = await authenticatedPut<ReviewApiResponse>(`${REVIEWS_API}/${id}`, payload);
       console.log("Review updated successfully:", result);
       setToast({
         message: "Review updated successfully!",

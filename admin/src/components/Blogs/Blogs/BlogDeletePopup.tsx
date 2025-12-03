@@ -1,9 +1,8 @@
 import { useState, type ReactElement, type KeyboardEvent } from "react";
 import BlogsCard from "../BlogManagement/BlogCard";
 import { BLOGS_API } from "../../../config/backend";
-import type { ApiError } from "../../../types/api.types";
 import type { BlogForDelete } from "../../../types/blog.types";
-import { safeJsonParse } from "../../../utils/helpers";
+import { authenticatedDelete } from "../../../utils/api";
 
 export default function BlogDeletePopup({
   onClose,
@@ -51,14 +50,7 @@ export default function BlogDeletePopup({
 
     try {
       setLoading(true);
-      const res = await fetch(`${BLOGS_API}/${id}`, {
-        method: "DELETE",
-      });
-
-      if (!res.ok) {
-        const body = await safeJsonParse<ApiError | { message?: string }>(res);
-        throw new Error(body.message || `Server returned ${res.status}`);
-      }
+      await authenticatedDelete(`${BLOGS_API}/${id}`);
 
       // success
       onConfirm?.();

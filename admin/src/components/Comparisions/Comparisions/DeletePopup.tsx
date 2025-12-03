@@ -1,7 +1,8 @@
 import { useState, type ReactElement } from "react";
 import ComparisionCard from "./ComparisionsCard";
 import { BACKEND_URL } from "../../../config/backend";
-import type { ComparisonApiResponse, ApiError } from "../../../types/api.types";
+import type { ComparisonApiResponse } from "../../../types/api.types";
+import { authenticatedDelete } from "../../../utils/api";
 
 export default function DeletePopup({
   onClose,
@@ -25,15 +26,7 @@ export default function DeletePopup({
 
     try {
       setLoading(true);
-      const res = await fetch(`${BACKEND_URL}/api/comparisons/${id}`, {
-        method: "DELETE",
-        headers: { "Content-Type": "application/json" },
-      });
-
-      if (!res.ok) {
-        const body = (await res.json().catch(() => ({}))) as ApiError | { message?: string };
-        throw new Error(body.message || `Server returned ${res.status}`);
-      }
+      await authenticatedDelete(`${BACKEND_URL}/api/comparisons/${id}`);
 
       // success
       onConfirm?.();

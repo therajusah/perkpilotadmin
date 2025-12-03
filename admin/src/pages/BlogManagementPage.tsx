@@ -6,6 +6,7 @@ import ArticleGrid from "../components/Blogs/BlogManagement/ArticleGrid";
 import FooterActions from "../components/Blogs/BlogManagement/FooterActions";
 import Toast from "../components/Shared/Toast";
 import { BLOGPAGE_API } from "../config/backend";
+import { authenticatedPut } from "../utils/api";
 
 interface BlogPageData {
   status: "live" | "maintenance";
@@ -78,22 +79,11 @@ export default function BlogManagementPage(): ReactElement {
   const handleSave = async (publish: boolean): Promise<void> => {
     try {
       setError(null);
-      const response = await fetch(BLOGPAGE_API, {
-        method: "PUT",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
+      await authenticatedPut(BLOGPAGE_API, {
           ...blogPageData,
           // If publish is true, ensure status is "live"
           status: publish ? "live" : blogPageData.status,
-        }),
       });
-
-      if (!response.ok) {
-        const errorData = (await response.json().catch(() => ({}))) as { message?: string };
-        throw new Error(errorData.message || `Failed to save: ${response.status}`);
-      }
 
       setToast({
         message: publish ? "Blog page settings saved and published!" : "Blog page settings saved as draft!",

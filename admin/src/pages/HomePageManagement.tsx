@@ -9,7 +9,8 @@ import TopPicks from "../components/HomeManagement/TopsPicks";
 import SoftwareCompanies from "../components/HomeManagement/SoftwareComparisions";
 import TopReviews from "../components/HomeManagement/TopReviews";
 import { HOMEPAGE_API } from "../config/backend";
-import type { HomePageData, HomePageApiResponse, ApiErrorResponse, StatItem } from "../types/homepage.types";
+import type { HomePageData, HomePageApiResponse, StatItem } from "../types/homepage.types";
+import { authenticatedPut } from "../utils/api";
 
 export default function HomeManagementPage(): ReactElement {
   const [loading, setLoading] = useState(true);
@@ -254,22 +255,7 @@ export default function HomeManagementPage(): ReactElement {
         status: publish ? "live" : homePageData.status,
       };
 
-      const response = await fetch(HOMEPAGE_API as RequestInfo | URL, {
-        method: "PUT",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(payload),
-      });
-
-      if (!response.ok) {
-        const errorData = (await response.json().catch(() => ({}))) as ApiErrorResponse;
-        throw new Error(
-          errorData.message || `Failed to save homepage: ${response.status}`
-        );
-      }
-
-      const savedData = (await response.json()) as HomePageApiResponse;
+      const savedData = await authenticatedPut<HomePageApiResponse>(HOMEPAGE_API, payload);
 
       // Extract IDs from populated arrays
       const extractIds = (arr: Array<string | { _id: string }> | undefined): string[] => {

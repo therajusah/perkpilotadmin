@@ -6,6 +6,7 @@ import { DEALS_API } from "../../../config/backend";
 import { fetchLogoByDomain } from "../../../utils/LogoFetch";
 import type { DealApiResponse, ApiError } from "../../../types/api.types";
 import CategorySelector from "../../Shared/CategorySelector";
+import { authenticatedPost } from "../../../utils/api";
 export default function Hero({
   reviewId,
   create,
@@ -300,20 +301,7 @@ export default function Hero({
           secondary_cta_link: formData.secondaryCtaLink || null,
         };
 
-        const res = await fetch(`${DEALS_API}/`, {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify(payload),
-        });
-
-        if (!res.ok) {
-          const errBody = (await res.json().catch(() => ({}))) as ApiError | { message?: string };
-          throw new Error(errBody.message || `Server returned ${res.status}`);
-        }
-
-        const data = await res.json() as DealApiResponse;
+        const data = await authenticatedPost<DealApiResponse>(`${DEALS_API}/`, payload);
         setSuccessMessage("Deal created successfully.");
         console.log("Created deal:", data);
         

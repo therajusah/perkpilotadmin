@@ -367,13 +367,13 @@ export default function ToolsMentioned({
               {/* Search Results Dropdown */}
               {showResults && searchResults.length > 0 && (
                 <div className="absolute top-full left-0 right-0 mt-1 bg-zinc-800 border border-zinc-700 rounded-xl shadow-lg z-50 max-h-60 overflow-y-auto">
-                  {searchResults.map((deal) => {
+                  {searchResults.map((deal, index) => {
                     const isSelected = tools.some(
                       (t) => t.name.toLowerCase() === deal.title.toLowerCase()
                     );
                     return (
                       <div
-                        key={deal._id || deal.id || deal.title}
+                        key={`search-tool-${deal._id || deal.id || deal.title || index}-${index}`}
                         onClick={(): void => {
                           if (!isSelected) {
                             addToolFromSearch(deal);
@@ -416,9 +416,9 @@ export default function ToolsMentioned({
         )}
 
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 self-stretch w-full">
-          {tools.map((tool) => (
+          {tools.map((tool, index) => (
             <div
-              key={tool.id}
+              key={`tool-${tool.id || tool.name || index}-${index}`}
               data-layer="Card"
               className="Card self-stretch w-full h-[88px] px-4 bg-zinc-800 rounded-3xl outline-1 outline-zinc-700 inline-flex justify-start items-center gap-4"
             >

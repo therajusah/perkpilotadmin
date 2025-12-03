@@ -6,6 +6,7 @@ import { DEALS_API } from "../../../config/backend";
 import { fetchLogoByDomain } from "../../../utils/LogoFetch";
 import type { DealApiResponse, ApiError } from "../../../types/api.types";
 import CategorySelector from "../../Shared/CategorySelector";
+import { authenticatedPost, authenticatedPut } from "../../../utils/api";
 export default function ToolComparisonForm({
   reviewId,
   create,
@@ -349,22 +350,9 @@ export default function ToolComparisonForm({
           ? `${DEALS_API}/${String(editId)}`
           : `${DEALS_API}/`;
 
-        const method = editId ? "PUT" : "POST";
-
-        const res = await fetch(endpoint, {
-          method,
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify(payload),
-        });
-
-        if (!res.ok) {
-          const errBody = (await res.json().catch((): Record<string, never> => ({}))) as ApiError | { message?: string };
-          throw new Error(errBody.message || `Server returned ${res.status}`);
-        }
-
-        const data = await res.json() as DealApiResponse;
+        const data = editId
+          ? await authenticatedPut<DealApiResponse>(endpoint, payload)
+          : await authenticatedPost<DealApiResponse>(endpoint, payload);
         if (editId) {
           setSuccessMessage("Deal updated successfully. Redirecting...");
           console.log("Updated deal:", data);

@@ -1,8 +1,8 @@
 import { useState, type ReactElement } from "react";
 import ReviewsCard from "./ReviewsCard";
 import { REVIEWS_API } from "../../../config/backend";
-import type { ReviewApiResponse, ApiError } from "../../../types/api.types";
-import { safeJsonParse } from "../../../utils/helpers";
+import type { ReviewApiResponse } from "../../../types/api.types";
+import { authenticatedDelete } from "../../../utils/api";
 
 export default function DeletePopup({
   onClose,
@@ -27,15 +27,7 @@ export default function DeletePopup({
 
     try {
       setLoading(true);
-      const res = await fetch(`${REVIEWS_API}/${reviewId}`, {
-        method: "DELETE",
-        headers: { "Content-Type": "application/json" },
-      });
-
-      if (!res.ok) {
-        const body = await safeJsonParse<ApiError | { message?: string }>(res);
-        throw new Error(body.message || `Server returned ${res.status}`);
-      }
+      await authenticatedDelete(`${REVIEWS_API}/${reviewId}`);
 
       // success
       onConfirm?.();

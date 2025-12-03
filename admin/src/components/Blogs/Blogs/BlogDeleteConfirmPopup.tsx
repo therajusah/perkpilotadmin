@@ -1,9 +1,8 @@
 import { useState, type ReactElement } from "react";
 import { BLOGS_API } from "../../../config/backend";
-import type { ApiError } from "../../../types/api.types";
 import type { BlogDeleteConfirmPopupProps } from "../../../types/blog.types";
 import BlogsCard from "../BlogManagement/BlogCard";
-import { safeJsonParse } from "../../../utils/helpers";
+import { authenticatedDelete } from "../../../utils/api";
 
 export default function BlogDeleteConfirmPopup({
   onClose,
@@ -23,14 +22,7 @@ export default function BlogDeleteConfirmPopup({
 
     try {
       setLoading(true);
-      const res = await fetch(`${BLOGS_API}/${id}`, {
-        method: "DELETE",
-      });
-
-      if (!res.ok) {
-        const body = await safeJsonParse<ApiError | { message?: string }>(res);
-        throw new Error(body.message || `Server returned ${res.status}`);
-      }
+      await authenticatedDelete(`${BLOGS_API}/${id}`);
 
       // success
       onConfirm?.();
