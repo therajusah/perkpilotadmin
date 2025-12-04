@@ -167,6 +167,8 @@ export interface ComparisonApiResponse {
     moduleNumber: number;
     moduleName: string;
   }>;
+  moreComparisonsSectionTitle?: string;
+  moreComparisons?: string[] | ComparisonApiResponse[]; 
   slug: string;
   isPublished: boolean;
   viewCount: number;

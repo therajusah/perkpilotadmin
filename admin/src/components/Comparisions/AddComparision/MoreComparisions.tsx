@@ -11,31 +11,77 @@ import ComparisionsGrid from "../../HomeManagement/ComparisionsGrid";
 import type { ComparisonApiResponse } from "../../../types/api.types";
 import fetchComparisions from "../../../hooks/useComparisions";
 
-const MAX_SELECTED = 6;
+const MAX_SELECTED = 8;
 
 type Props = {
   initialSectionTitle?: string;
+  initialSelectedComparisons?: ComparisonApiResponse[];
   onSectionTitleChange?: (title: string) => void;
+  onComparisonsChange?: (comparisons: ComparisonApiResponse[]) => void;
 };
 
 export default function MoreComparisions({
   initialSectionTitle = "",
+  initialSelectedComparisons = [],
   onSectionTitleChange,
+  onComparisonsChange,
 }: Props): ReactElement {
   const [query, setQuery] = useState("");
   const [sectionTitle, setSectionTitle] = useState(initialSectionTitle);
   const [allComparisons, setAllComparisons] = useState<ComparisonApiResponse[]>([]);
-  const [selectedComparisons, setSelectedComparisons] = useState<ComparisonApiResponse[]>([]);
+  const [selectedComparisons, setSelectedComparisons] = useState<ComparisonApiResponse[]>(initialSelectedComparisons);
   const [isExpanded, setIsExpanded] = useState(true);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [showResults, setShowResults] = useState(false);
   const searchContainerRef = useRef<HTMLDivElement | null>(null);
 
-  // Notify parent when section title changes
+  // Track previous initial values to detect external changes
+  const prevInitialComparisonsRef = useRef<string>("");
+  const prevInitialTitleRef = useRef<string>("");
+
+  // Update selected comparisons when initialSelectedComparisons changes externally
   useEffect(() => {
-    onSectionTitleChange?.(sectionTitle);
+    const currentIds = initialSelectedComparisons.map(c => getComparisonId(c)).sort().join(',');
+    
+    // Only update if the initial comparisons actually changed externally
+    if (currentIds !== prevInitialComparisonsRef.current) {
+      setSelectedComparisons(initialSelectedComparisons);
+      prevInitialComparisonsRef.current = currentIds;
+    }
+  }, [initialSelectedComparisons]);
+
+  // Update section title when initialSectionTitle changes externally
+  useEffect(() => {
+    const currentTitle = initialSectionTitle || "";
+    
+    // Only update if the initial title actually changed externally
+    if (currentTitle !== prevInitialTitleRef.current) {
+      setSectionTitle(currentTitle);
+      prevInitialTitleRef.current = currentTitle;
+    }
+  }, [initialSectionTitle]);
+
+  // Notify parent when section title changes
+  const prevSectionTitleRef = useRef<string>(sectionTitle);
+  useEffect(() => {
+    if (sectionTitle !== prevSectionTitleRef.current) {
+      prevSectionTitleRef.current = sectionTitle;
+      onSectionTitleChange?.(sectionTitle);
+    }
   }, [sectionTitle, onSectionTitleChange]);
+
+  // Notify parent when selected comparisons change 
+  const prevSelectedComparisonsRef = useRef<ComparisonApiResponse[]>(selectedComparisons);
+  useEffect(() => {
+    const currentIds = selectedComparisons.map(c => getComparisonId(c)).sort().join(',');
+    const prevIds = prevSelectedComparisonsRef.current.map(c => getComparisonId(c)).sort().join(',');
+    
+    if (currentIds !== prevIds) {
+      prevSelectedComparisonsRef.current = selectedComparisons;
+      onComparisonsChange?.(selectedComparisons);
+    }
+  }, [selectedComparisons, onComparisonsChange]);
 
   // Fetch comparisons on mount
   useEffect(() => {
@@ -48,10 +94,6 @@ export default function MoreComparisions({
         const data = await fetchComparisions();
         if (!isMounted) return;
         setAllComparisons(data);
-        setSelectedComparisons((prev) => {
-          if (prev.length) return prev;
-          return [];
-        });
       } catch (err) {
         if (!isMounted) return;
         setError(err instanceof Error ? err.message : "Failed to load comparisons");
@@ -68,7 +110,7 @@ export default function MoreComparisions({
     return () => {
       isMounted = false;
     };
-  }, []);
+  }, []); 
 
   // Close search dropdown when clicking outside
   useEffect(() => {
@@ -138,6 +180,7 @@ export default function MoreComparisions({
   const handleDeleteSection = (): void => {
     if (window.confirm("Are you sure you want to delete this section?")) {
       setSelectedComparisons([]);
+      setSectionTitle("");
     }
   };
 

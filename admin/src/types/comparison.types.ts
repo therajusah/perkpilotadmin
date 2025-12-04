@@ -73,6 +73,8 @@ export type ComparisonData = {
   }>;
   featuresComparison: FeaturesData;
   prosConsCards: ProsConsCard[];
+  moreComparisonsSectionTitle?: string;
+  moreComparisons?: string[];
   slug: string;
   isPublished: boolean;
 };

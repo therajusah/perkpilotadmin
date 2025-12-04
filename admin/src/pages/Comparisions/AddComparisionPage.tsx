@@ -17,7 +17,7 @@ import type {
   ComparisonData,
   BlogModuleEntry,
 } from "../../types/comparison.types";
-import type { FeatureComparisonApiResponse, BlogSectionApiResponse } from "../../types/api.types";
+import type { FeatureComparisonApiResponse, BlogSectionApiResponse, ComparisonApiResponse } from "../../types/api.types";
 
 export default function AddComparisionPage(): ReactElement {
   const navigate = useNavigate();
@@ -46,6 +46,7 @@ export default function AddComparisionPage(): ReactElement {
   });
   const [blogModules, setBlogModules] = useState<BlogModuleEntry[]>([]);
   const [moreComparisonsTitle, setMoreComparisonsTitle] = useState<string>("");
+  const [moreComparisons, setMoreComparisons] = useState<ComparisonApiResponse[]>([]);
 
   const handleHeroHeadingChange = (heading: string): void => {
     const slug = heading
@@ -194,6 +195,24 @@ export default function AddComparisionPage(): ReactElement {
 
   const handleMoreComparisonsTitleChange = (title: string): void => {
     setMoreComparisonsTitle(title);
+    setComparisonData((prev) => ({
+      ...prev,
+      moreComparisonsSectionTitle: title,
+    }));
+  };
+
+  const handleMoreComparisonsChange = (comparisons: ComparisonApiResponse[]): void => {
+    setMoreComparisons(comparisons);
+    const comparisonIds = comparisons
+      .map((comp: ComparisonApiResponse): string => {
+        return comp._id ?? comp.id ?? "";
+      })
+      .filter((id: string): id is string => id !== "");
+    
+    setComparisonData((prev) => ({
+      ...prev,
+      moreComparisons: comparisonIds,
+    }));
   };
 
   const buildModuleCards = (modules: BlogModuleEntry[]): Array<{ id: string; name: string }> => {
@@ -245,7 +264,9 @@ export default function AddComparisionPage(): ReactElement {
       <ProConGrid onProsConsChange={handleProsConsChange} />
       <MoreComparisions
         initialSectionTitle={moreComparisonsTitle}
+        initialSelectedComparisons={moreComparisons}
         onSectionTitleChange={handleMoreComparisonsTitleChange}
+        onComparisonsChange={handleMoreComparisonsChange}
       />
       <FooterActions
         comparisonData={comparisonData}

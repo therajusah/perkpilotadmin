@@ -57,6 +57,7 @@ export default function UpdateComparisionPage(): ReactElement {
   const [comparisonData, setComparisonData] = useState<ComparisonData | null>(null);
   const [blogModules, setBlogModules] = useState<BlogModuleEntry[]>([]);
   const [moreComparisonsTitle, setMoreComparisonsTitle] = useState<string>("");
+  const [moreComparisons, setMoreComparisons] = useState<ComparisonApiResponse[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -116,12 +117,34 @@ export default function UpdateComparisionPage(): ReactElement {
             features: [],
           },
           prosConsCards: data.prosConsCards || [],
+          moreComparisonsSectionTitle: data.moreComparisonsSectionTitle || "",
+          moreComparisons: Array.isArray(data.moreComparisons) 
+            ? data.moreComparisons.map((comp: ComparisonApiResponse | string) => 
+                typeof comp === "string" ? comp : (comp._id ?? comp.id ?? "")
+              ).filter((id: string) => id !== "")
+            : [],
           slug: data.slug || "",
           isPublished: data.isPublished ?? true,
         };
 
         setComparisonData(transformedData);
         setBlogModules(normalizedBlogModules);
+        
+        // Set more comparisons title
+        setMoreComparisonsTitle(data.moreComparisonsSectionTitle || "");
+        
+        // Set initial more comparisons if they exist
+        // Backend populates moreComparisons, so they should be full objects
+        if (Array.isArray(data.moreComparisons) && data.moreComparisons.length > 0) {
+          // Filter out string IDs and keep only populated objects
+          const populatedComparisons = data.moreComparisons.filter(
+            (comp): comp is ComparisonApiResponse => 
+              typeof comp === "object" && comp !== null && !Array.isArray(comp)
+          );
+          if (populatedComparisons.length > 0) {
+            setMoreComparisons(populatedComparisons);
+          }
+        }
       } catch (err) {
         console.error("Failed to load comparison:", err);
         const errorMessage = err instanceof Error ? err.message : "Failed to load comparison";
@@ -301,7 +324,26 @@ export default function UpdateComparisionPage(): ReactElement {
   };
 
   const handleMoreComparisonsTitleChange = (title: string): void => {
+    if (!comparisonData) return;
     setMoreComparisonsTitle(title);
+    setComparisonData((prev) => prev ? ({
+      ...prev,
+      moreComparisonsSectionTitle: title,
+    }) : null);
+  };
+
+  const handleMoreComparisonsChange = (comparisons: ComparisonApiResponse[]): void => {
+    if (!comparisonData) return;
+    setMoreComparisons(comparisons);
+    // Extract IDs from comparisons
+    const comparisonIds = comparisons.map((comp) => {
+      return comp._id ?? comp.id ?? "";
+    }).filter((id) => id !== "");
+    
+    setComparisonData((prev) => prev ? ({
+      ...prev,
+      moreComparisons: comparisonIds,
+    }) : null);
   };
 
   // Transform tools for ToolsMentioned component
@@ -411,7 +453,9 @@ export default function UpdateComparisionPage(): ReactElement {
       />
       <MoreComparisions
         initialSectionTitle={moreComparisonsTitle}
+        initialSelectedComparisons={moreComparisons}
         onSectionTitleChange={handleMoreComparisonsTitleChange}
+        onComparisonsChange={handleMoreComparisonsChange}
       />
       <FooterActions
         comparisonData={comparisonData}
