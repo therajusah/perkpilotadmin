@@ -1,16 +1,25 @@
 import {useEffect, useRef, useState, type ReactElement} from "react";
+import { uploadToCloudinary } from "../../config/cloudinary";
 
 type Props = {
-  onImageChange?: (file: File | null) => void;
+  imageUrl?: string;
+  onImageChange?: (url: string | null) => void;
 };
 
-export default function HeroImageUpload({ onImageChange }: Props): ReactElement {
-  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+export default function HeroImageUpload({ imageUrl, onImageChange }: Props): ReactElement {
+  const [previewUrl, setPreviewUrl] = useState<string | null>(imageUrl || null);
   const [file, setFile] = useState<File | null>(null);
   const [progress, setProgress] = useState<number | null>(null);
   const [imageError, setImageError] = useState<boolean>(false);
   const timerRef = useRef<number | null>(null);
   const imgRef = useRef<HTMLImageElement | null>(null);
+
+
+  useEffect(() => {
+    if (imageUrl !== undefined) {
+      setPreviewUrl(imageUrl || null);
+    }
+  }, [imageUrl]);
 
   useEffect(() => {
     return () => {
@@ -26,9 +35,11 @@ export default function HeroImageUpload({ onImageChange }: Props): ReactElement 
     };
   }, [previewUrl]);
 
-  function handleFileInput(f: File | null): void {
+  async function handleFileInput(f: File | null): Promise<void> {
     if (!f) {
-      if (previewUrl) URL.revokeObjectURL(previewUrl);
+      if (previewUrl && previewUrl.startsWith('blob:')) {
+        URL.revokeObjectURL(previewUrl);
+      }
       setPreviewUrl(null);
       setFile(null);
       setProgress(null);
@@ -36,12 +47,14 @@ export default function HeroImageUpload({ onImageChange }: Props): ReactElement 
       if (onImageChange) onImageChange(null);
       return;
     }
-    if (previewUrl) URL.revokeObjectURL(previewUrl);
-    const url = URL.createObjectURL(f);
-    setPreviewUrl(url);
+
     setFile(f);
     setProgress(0);
     setImageError(false);
+
+    // Create local preview for immediate feedback
+    const localPreviewUrl = URL.createObjectURL(f);
+    setPreviewUrl(localPreviewUrl);
 
     if (timerRef.current) {
       clearInterval(timerRef.current);
@@ -55,32 +68,36 @@ export default function HeroImageUpload({ onImageChange }: Props): ReactElement 
       });
     }, 300);
 
-    const image = new Image();
-    imgRef.current = image;
-    image.onload = (): void => {
+    try {
+      const cloudinaryUrl = await uploadToCloudinary(f);
+
       if (timerRef.current) {
         clearInterval(timerRef.current);
         timerRef.current = null;
       }
+      if (localPreviewUrl) URL.revokeObjectURL(localPreviewUrl);
+      setPreviewUrl(cloudinaryUrl);
       setProgress(100);
-      setTimeout(() => setProgress(null), 600);
-      if (onImageChange) onImageChange(f);
+      setTimeout(() => {
+        setProgress(null);
+      }, 600);
+
+      if (onImageChange) onImageChange(cloudinaryUrl);
       imgRef.current = null;
-    };
-    image.onerror = (): void => {
+    } catch (error) {
       if (timerRef.current) {
         clearInterval(timerRef.current);
         timerRef.current = null;
       }
-      if (previewUrl) URL.revokeObjectURL(previewUrl);
+      if (localPreviewUrl) URL.revokeObjectURL(localPreviewUrl);
       setProgress(null);
       setPreviewUrl(null);
       setFile(null);
       setImageError(true);
       imgRef.current = null;
       if (onImageChange) onImageChange(null);
-    };
-    image.src = url;
+      console.error("Error uploading image:", error);
+    }
   }
 
   return (
@@ -231,7 +248,7 @@ export default function HeroImageUpload({ onImageChange }: Props): ReactElement 
                   className="hidden"
                   onChange={(e) => {
                     const f = e.target.files?.[0] ?? null;
-                    handleFileInput(f);
+                    void handleFileInput(f);
                   }}
                 />
               </div>

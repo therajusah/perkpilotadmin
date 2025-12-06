@@ -9,7 +9,8 @@ type Props = {
   tags?: string[];
   ctaText?: string;
   ctaLink?: string;
-  onHeroImageChange?: (file: File | null) => void;
+  heroImage?: string;
+  onHeroImageChange?: (url: string | null) => void;
   onChange?: (fields: {
     topTagline: string;
     mainHeadline: string;
@@ -17,6 +18,7 @@ type Props = {
     ctaText?: string;
     ctaLink?: string;
     tags: string[];
+    heroImage?: string;
   }) => void;
   open?: boolean;
   onToggleOpen?: (next: boolean) => void;
@@ -29,6 +31,7 @@ export default function HeroSectionManagement({
   ctaText,
   ctaLink,
   tags,
+  heroImage,
   onChange,
   open: openProp,
   onToggleOpen,
@@ -80,6 +83,20 @@ export default function HeroSectionManagement({
     if (openProp === undefined) setInternalOpen(next);
     if (onToggleOpen) onToggleOpen(next);
   }
+  const handleHeroImageChange = (url: string | null): void => {
+    if (onHeroImageChange) onHeroImageChange(url);
+    if (onChange) {
+      onChange({
+        topTagline: internalTop,
+        mainHeadline: internalMain,
+        subHeadline: internalSub,
+        ctaText: internalCtaText,
+        ctaLink: internalCtaLink,
+        tags: internalTags,
+        heroImage: url || undefined,
+      });
+    }
+  };
 
   // notify parent when fields change
   useEffect((): void => {
@@ -91,6 +108,7 @@ export default function HeroSectionManagement({
         ctaText: internalCtaText,
         ctaLink: internalCtaLink,
         tags: internalTags,
+        heroImage: heroImage,
       });
   }, [
     internalTop,
@@ -99,6 +117,7 @@ export default function HeroSectionManagement({
     internalCtaText,
     internalCtaLink,
     internalTags,
+    heroImage,
     onChange,
   ]);
 
@@ -188,9 +207,8 @@ export default function HeroSectionManagement({
             <div className="flex flex-col self-stretch gap-2">
             <div className="text-neutral-50 text-sm font-medium">Hero Image</div>
             <HeroImageUpload
-              onImageChange={(file: File | null): void => {
-                if (onHeroImageChange) onHeroImageChange(file);
-              }}
+              imageUrl={heroImage}
+              onImageChange={handleHeroImageChange}
             />
             </div>
           </div>

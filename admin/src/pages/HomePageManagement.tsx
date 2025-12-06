@@ -75,6 +75,7 @@ export default function HomeManagementPage(): ReactElement {
     ctaText?: string;
     ctaLink?: string;
     tags: string[];
+    heroImage?: string;
   }) => {
     setHomePageData((prev) => ({
       ...prev,
@@ -86,6 +87,7 @@ export default function HomeManagementPage(): ReactElement {
         ctaText: fields.ctaText,
         ctaLink: fields.ctaLink,
         tags: fields.tags,
+        heroImage: fields.heroImage || prev.hero.heroImage || "",
       },
     }));
   }, []);
@@ -189,14 +191,13 @@ export default function HomeManagementPage(): ReactElement {
 
         setHomePageData({
           status: data.status || "live",
-          hero: data.hero || {
-            topTagline: "For Expert Insights",
-            mainHeadline: "Software Homes",
-            subHeadline: "In-depth reviews, comparisons, and insights about the latest software tools and productivity solutions.",
-            ctaText: "",
-            ctaLink: "",
-            tags: ["AI Tools", "No-code", "Marketing"],
-            heroImage: "",
+          hero: {
+            topTagline: data.hero?.topTagline || "For Expert Insights",
+            mainHeadline: data.hero?.mainHeadline || "Software Homes",
+            subHeadline: data.hero?.subHeadline || "In-depth reviews, comparisons, and insights about the latest software tools and productivity solutions.",
+            ctaText: data.hero?.ctaText || "",
+            ctaLink: data.hero?.ctaLink || "",
+            heroImage: data.hero?.heroImage || "",
           },
           discountedIcons: data.discountedIcons || {
             topTagline: "For Expert Insights",
@@ -335,6 +336,7 @@ export default function HomeManagementPage(): ReactElement {
             subHeadline={homePageData.hero.subHeadline}
             ctaText={homePageData.hero.ctaText}
             ctaLink={homePageData.hero.ctaLink}
+            heroImage={homePageData.hero.heroImage}
             onChange={handleHeroChange}
           />
           <DiscountedIcons
