@@ -148,7 +148,7 @@ export default function ArticleGrid(): ReactElement{
       if (!blogIdToUpdate) return;
 
       await authenticatedPatch(`${BLOGS_API}/${blogIdToUpdate}`, {
-        blogIsFeatured: newFeaturedStatus,
+          blogIsFeatured: newFeaturedStatus,
       });
     } catch (error) {
       console.error("Error updating featured status:", error);
